@@ -41,6 +41,7 @@ def group_categories(df, column, number):
     print(df[column].value_counts().reset_index())
     return df
 
+# Opening a socket
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -96,8 +97,6 @@ while True:
 
     # dropping unnecessary columns
 
-    # column "labels" is equal to the target "status", so it needs to be dropped
-
     g = rdflib.Graph()
     result = g.parse(file=open("StartupSuccessKB.n3", "r+"), format="text/n3")
 
@@ -120,6 +119,8 @@ while True:
     print('<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>')
 
     startup_data.drop(columns_to_drop, axis=1, inplace=True)
+
+
     print(startup_data.isnull().sum())
 
     startup_data["age_first_milestone_year"] = startup_data["age_first_milestone_year"].fillna(0)
@@ -178,11 +179,11 @@ while True:
     else:
         conn.sendall(bytes("Incorrect", 'utf-8'))
 
-    conn.sendall(bytes("Training and evaluating the neuronet...", 'utf-8'))
-
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, shuffle=True)
 
     # # NEURONET TRAINING AND PREDICTION
+
+    conn.sendall(bytes("Training and evaluating the neuronet...", 'utf-8'))
 
     model = Sequential()
     model.add(Dense(24, activation='relu'))

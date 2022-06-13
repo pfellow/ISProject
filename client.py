@@ -28,10 +28,16 @@ print("You selected: " + filename)
 
 click.confirm('Do you want to start data processing?', abort=True)
 
+
+# Opening a socket
+
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(('localhost', 1234))
 s.sendall(bytes(filename, 'utf-8'))
 conn_est = s.recv(1024).decode('utf-8')
+
+# Test size
+
 print(conn_est)
 test_size_msg = s.recv(1024).decode('utf-8')
 print(test_size_msg)
@@ -47,6 +53,8 @@ else:
     print(new_test_size_msg)
 
 print(s.recv(1024).decode('utf-8'))
+
+# Results
 
 acc = pickle.loads(s.recv(4096))
 val = pickle.loads(s.recv(4096))
@@ -81,7 +89,5 @@ plt.ylabel('Actual')
 
 plt.tight_layout()
 plt.show()
-
-# print(s.recv(1024).decode('utf-8'))
 
 s.close()
