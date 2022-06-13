@@ -1,19 +1,14 @@
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
-from sklearn import metrics
-from sklearn.svm import SVC
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
-from sklearn.ensemble import RandomForestClassifier
-import matplotlib.pyplot as plt
-import seaborn as sns
-from keras.models import Sequential
-from keras.layers import Dense
-import rdflib
+import pickle
 import socket
-
 import warnings
+
+import numpy as np
+import pandas as pd
+import rdflib
+from keras.layers import Dense
+from keras.models import Sequential
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 warnings.filterwarnings("ignore")
 
@@ -143,7 +138,7 @@ while True:
         normalized = scaler.transform(values)
         startup_data[i] = normalized
 
-    # FINDING THE MOST ACCURATE MODEL
+    # Splitting train and test data
 
     X = startup_data.drop('status', axis=1)
     y = startup_data['status']
@@ -183,86 +178,50 @@ while True:
     else:
         conn.sendall(bytes("Incorrect", 'utf-8'))
 
-    conn.sendall(bytes("Training and evaluating the models...", 'utf-8'))
+    conn.sendall(bytes("Training and evaluating the neuronet...", 'utf-8'))
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, shuffle=True)
-    results = {};
 
-    # SVM
+    # # NEURONET TRAINING AND PREDICTION
 
-    print("Support Vector Machines")
-    svclassifier = SVC(kernel='linear')
-    svclassifier.fit(X_train, y_train)
-    y_pred = svclassifier.predict(X_test)
-    print(confusion_matrix(y_test, y_pred))
-    print(classification_report(y_test, y_pred))
-    results["SupportVectorMachines"] = accuracy_score(y_test, y_pred)
-
-    # RandomForestClassifier
-
-    print("Random Forest Classifier")
-    rfc = RandomForestClassifier()
-    rfc.fit(X_train, y_train)
-    y_pred = rfc.predict(X_test)
-    print(confusion_matrix(y_test, y_pred))
-    print(classification_report(y_test, y_pred))
-    results["RandomForestClassifier"] = accuracy_score(y_test, y_pred)
-
-    # Neuronet (Keras)
-
-    print("Keras Neuronet")
     model = Sequential()
-    model.add(Dense(20, activation='relu'))
-    model.add(Dense(6, activation='relu'))
+    model.add(Dense(24, activation='relu'))
+    model.add(Dense(3, activation='relu'))
     model.add(Dense(1, activation="sigmoid"))
 
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-    model_results = model.fit(X_train, y_train, epochs=50, batch_size=10, validation_data=(X_test, y_test), verbose=0)
+    model_results = model.fit(X_train, y_train, epochs=200, batch_size=64, validation_data=(X_test, y_test), verbose=0)
 
-    print("Keras Neuronet Accuracy: ", np.mean(model_results.history["val_accuracy"]))
+    aver_acc = np.mean(model_results.history["val_accuracy"])
+    print("Keras Neuronet Accuracy: ", aver_acc)
 
-    results["KerasNeuronet"] = np.mean(model_results.history["val_accuracy"])
+    y_pred = model.predict(X_test) > 0.5
 
-    # PLOT
+    # sending data for plots
 
-    # feats = {}
-    # for feature, importance in zip(startup_data.columns, rfc.feature_importances_):
-    #     feats[feature] = importance
-    # importances = pd.DataFrame.from_dict(feats, orient='index').rename(columns={0: 'Gini-Importance'})
-    # importances = importances.sort_values(by='Gini-Importance', ascending=False)
-    # importances = importances.reset_index()
-    # importances = importances.rename(columns={'index': 'Features'})
-    # sns.set(font_scale=5)
-    # sns.set(style="whitegrid", color_codes=True, font_scale=1.7)
-    # fig, ax = plt.subplots()
-    # fig.set_size_inches(20, 10)
-    # sns.barplot(x=importances['Gini-Importance'], y=importances['Features'], data=importances, color='skyblue')
-    # plt.xlabel('Importance', fontsize=20, weight='bold')
-    # plt.ylabel('Features', fontsize=20, weight='bold')
-    # plt.title('Feature Importance', fontsize=20, weight='bold')
-    # plt.show()
+    acc = model_results.history['accuracy']
+    val = model_results.history['val_accuracy']
 
-    results_to_client = ""
-    print("Overall results:")
-    results_to_client += "Overall results:"
+    conn.sendall(pickle.dumps(acc))
+    conn.sendall(pickle.dumps(val))
 
-    for mod in results:
-        print(mod, results[mod])
-        results_to_client += "\n" + mod + ": " + str(results[mod])
-        result.update(
-            """
-            DELETE {
-                ind:proc04 acc:xxx ?old_result
-            }
-            INSERT {
-                ind:proc04 acc:xxx new_result
-            }
-            WHERE {
-                ind:proc04 acc:xxx ?old_result
-            }""".replace("xxx", mod).replace("new_result", str(results[mod]))
-        )
+    conn.sendall(pickle.dumps(y_test))
+    conn.sendall(pickle.dumps(y_pred))
 
+    # Writing new data to KB
+
+    result.update(
+        """
+        DELETE {
+            ind:proc04 prop:neuronet_accuracy ?old_result
+        }
+        INSERT {
+            ind:proc04 prop:neuronet_accuracy new_result
+        }
+        WHERE {
+            ind:proc04 prop:neuronet_accuracy ?old_result
+        }""".replace("new_result", str(aver_acc))
+    )
     result.serialize(destination="StartupSuccessKB.n3")
-    conn.sendall(bytes(results_to_client, 'utf-8'))
 
 conn.close()

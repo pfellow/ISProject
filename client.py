@@ -1,9 +1,14 @@
+import pickle
+import socket
+import warnings
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename
-import click
-import socket
+import numpy as np
 
-import warnings
+import click
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
 
 warnings.filterwarnings("ignore")
 
@@ -42,10 +47,41 @@ else:
     print(new_test_size_msg)
 
 print(s.recv(1024).decode('utf-8'))
-print(s.recv(1024).decode('utf-8'))
+
+acc = pickle.loads(s.recv(4096))
+val = pickle.loads(s.recv(4096))
+y_test = pickle.loads(s.recv(8192))
+y_pred = pickle.loads(s.recv(8192))
+
+print("Neuronet Prediction Accuracy: ", np.mean(val))
+print("Displaying Training and Validation Accuracy and Confusion Matrix")
+
+sns.set()
+
+epochs = range(1, len(acc) + 1)
+
+plt.subplot(2, 1, 1)
+plt.plot(epochs, acc, '-', label='Training accuracy')
+plt.plot(epochs, val, ':', label='Validation accuracy')
+plt.title('Training and Validation Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend(loc='lower right')
+
+plt.subplot(2, 1, 2)
+mat = confusion_matrix(y_test, y_pred)
+labels = ['Success', 'Failure']
+
+sns.heatmap(mat, square=True, annot=True, fmt='d', cbar=False, cmap='Blues',
+            xticklabels=labels, yticklabels=labels)
+
+plt.title('Confusion matrix')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+
+plt.tight_layout()
+plt.show()
+
+# print(s.recv(1024).decode('utf-8'))
 
 s.close()
-
-
-
-
