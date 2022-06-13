@@ -1,0 +1,110 @@
+@prefix acc: <URN:accuracy:> .
+@prefix class: <URN:class> .
+@prefix ind: <URN:individual:> .
+@prefix prop: <URN:property:> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ind:proc02 rdfs:label "Choose predicting models and complete training" ;
+    prop:SubProcess ind:proc0 ;
+    prop:hasResource ind:Developers,
+        ind:PredictingModels,
+        ind:PythonLibraries .
+
+ind:proc03 rdfs:label "Get predictions on a test dataset" ;
+    prop:SubProcess ind:proc0 ;
+    prop:hasKPI ind:kpi1 ;
+    prop:hasResource ind:Developers .
+
+ind:proc04 rdfs:label "Assess and compare the results of prediction" ;
+    acc:KerasNeuronet 0.7858874487876892 ;
+    acc:RandomForestClassifier 0.8181818181818182 ;
+    acc:SupportVectorMachines 0.8311688311688312 ;
+    prop:SubProcess ind:proc0 ;
+    prop:hasKPI ind:kpi2 ;
+    prop:hasResource ind:Developers .
+
+ind:proc11 rdfs:label "Load and overview the data" ;
+    prop:SubProcess ind:proc01 ;
+    prop:hasResource ind:Developers,
+        ind:PythonLibraries .
+
+ind:proc12 rdfs:label "Choose necessary columns" ;
+    prop:SubProcess ind:proc01 ;
+    prop:columnToDelete "Unnamed: 0",
+        "Unnamed: 6",
+        "closed_at",
+        "first_funding_at",
+        "founded_at",
+        "id",
+        "labels",
+        "last_funding_at",
+        "latitude",
+        "longitude",
+        "name",
+        "object_id",
+        "state_code.1" ;
+    prop:hasResource ind:Developers,
+        ind:PythonLibraries .
+
+ind:proc13 rdfs:label "Adjust data for ML" ;
+    prop:SubProcess ind:proc01 ;
+    prop:hasResource ind:Developers,
+        ind:PythonLibraries .
+
+ind:proc14 rdfs:label "Divide the data to a train and test sets" ;
+    prop:SubProcess ind:proc01 ;
+    prop:hasResource ind:Developers ;
+    prop:testVolume 25 .
+
+ind:Interval1 a class:Interval ;
+    prop:hasMax "5" ;
+    prop:hasMin "0" ;
+    prop:timeUnits "minutes" .
+
+ind:Interval2 a class:Interval ;
+    prop:hasMax "100" ;
+    prop:hasMin "85" .
+
+ind:Interval3 a class:Interval ;
+    prop:hasMax "1" ;
+    prop:hasMin "0" .
+
+ind:PredictingModels a class:MLModels ;
+    rdfs:label "ML Models used in the project" .
+
+ind:kpi1 a class:KPI ;
+    rdfs:label "Prediction Time" ;
+    prop:hasInterval ind:Interval1 ;
+    prop:kpi ind:proc0 .
+
+ind:kpi2 a class:KPI ;
+    rdfs:label "Prediction Accuracy" ;
+    prop:hasInterval ind:Interval2 ;
+    prop:kpi ind:proc0 .
+
+ind:kpi3 a class:KPI ;
+    rdfs:label "Result Score" ;
+    prop:hasInterval ind:Interval3 ;
+    prop:kpi ind:proc0 .
+
+ind:proc01 rdfs:label "Assess and prepare data" ;
+    prop:SubProcess ind:proc0 ;
+    prop:hasKPI ind:kpi3 ;
+    prop:hasResource ind:Developers,
+        ind:PythonLibraries .
+
+ind:PythonLibraries a class:Software ;
+    rdfs:label "Python libraries used in the project" .
+
+ind:proc0 a class:Process ;
+    rdfs:label "Startup Success Prediction" ;
+    prop:hasKPI ind:kpi1,
+        ind:kpi2,
+        ind:kpi3 ;
+    rdf:isDefinedBy "SergeyShilovskiy" .
+
+ind:Developers a class:People ;
+    rdfs:label "Project developers" .
+
